@@ -17,7 +17,7 @@ async def generate_battle_report(req: BattleRequest) -> str:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
     ]
-    return await call_deepseek(messages, temperature=0.7, max_tokens=2048)
+    return await call_deepseek(messages, temperature=0.7, max_tokens=10240)
 
 async def generate_battle_report_stream(req: BattleRequest):
     """
@@ -57,5 +57,5 @@ async def generate_battle_report_stream(req: BattleRequest):
     ]
 
     # 调用流式 API，逐块 yield 内容
-    async for chunk in call_deepseek_stream(messages, temperature=0.7, max_tokens=2048):
+    async for chunk in call_deepseek_stream(messages, temperature=0.7, max_tokens=10240):
         yield chunk

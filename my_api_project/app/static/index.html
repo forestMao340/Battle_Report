@@ -176,9 +176,11 @@
         }
 
         // 流式请求通用函数
-        async function streamFetch(url, body, outputId, onComplete) {
+        async function streamFetch(url, body, outputId, onComplete, clearOnFirstChunk = false) {
             const output = document.getElementById(outputId);
-            output.innerHTML = '';
+            // 不再在开头清空，由调用者决定
+            let isFirstChunk = true;
+
             activeRequests++;
             updateStatus();
 
@@ -191,6 +193,8 @@
 
                 if (!response.ok) {
                     const err = await response.text();
+                    // 如果之前有提示，先清空再报错
+                    if (clearOnFirstChunk) output.innerHTML = '';
                     appendOutput(outputId, `错误：${response.status} ${err}`, 'text-red-600');
                     return;
                 }
@@ -202,11 +206,20 @@
                     const { done, value } = await reader.read();
                     if (done) break;
                     const chunk = decoder.decode(value, { stream: true });
+
+                    // 如果是第一个数据块且需要清空，则清空输出（清除加载提示）
+                    if (isFirstChunk && clearOnFirstChunk) {
+                        output.innerHTML = '';
+                        isFirstChunk = false;
+                    }
+
                     appendOutput(outputId, chunk);
                 }
 
                 if (onComplete) onComplete();
             } catch (error) {
+                // 出错时也清空提示
+                if (clearOnFirstChunk) output.innerHTML = '';
                 appendOutput(outputId, `网络错误：${error.message}`, 'text-red-600');
             } finally {
                 activeRequests--;
@@ -249,17 +262,26 @@
                 alert('请完整填写进攻方、防守方、战场地点和情节概要');
                 return;
             }
-
-            // 🔥 新增：校验情节概要长度
             if (plot.length < 10) {
                 alert('情节概要至少需要10个字符，请补充内容。');
                 return;
             }
 
+            // ----- 新增：显示加载提示 -----
+            const output = document.getElementById('battle-output');
+            output.innerHTML = ''; // 清空旧内容
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'text-gray-500 text-sm';
+            loadingMsg.textContent = '⏳ 正在生成战报，约需 10~15 秒，请稍候...';
+            output.appendChild(loadingMsg);
+
+            // 调用流式接口，并启用“首块清空”
             await streamFetch(
                 `${API_BASE}/battle_report/stream`,
                 { attacker, defender, location, plot, style },
-                'battle-output'
+                'battle-output',
+                null,
+                true   // clearOnFirstChunk = true
             );
         }
     </script>

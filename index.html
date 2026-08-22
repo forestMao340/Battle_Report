@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能翻译与战报生成</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+        .output-area {
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold mb-2">
+                    <i class="fas fa-robot mr-3"></i>
+                    AI 智能翻译与战报生成
+                </h1>
+                <p class="text-xl opacity-90">流式输出 · 实时响应 · 逐字展示</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- 通用翻译 -->
+            <div class="bg-white rounded-lg shadow-md card-hover" id="translate-card">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-language text-blue-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-semibold">通用翻译</h3>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="translate-text" placeholder="输入要翻译的文本" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="mb-3">
+                        <select id="translate-lang" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="en">英文</option>
+                            <option value="zh">中文</option>
+                            <option value="ja">日语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                        </select>
+                    </div>
+                    <button id="translate-btn" onclick="startTranslate()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-play mr-2"></i>翻译
+                    </button>
+                    <div id="translate-output" class="mt-4 p-3 bg-gray-100 rounded-lg output-area text-sm"></div>
+                </div>
+            </div>
+
+            <!-- 文言文翻译 -->
+            <div class="bg-white rounded-lg shadow-md card-hover" id="classical-card">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-book-open text-green-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-semibold">文言文翻译</h3>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="classical-text" placeholder="输入文言文原文" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <button id="classical-btn" onclick="startClassical()" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-play mr-2"></i>翻译为白话文
+                    </button>
+                    <div id="classical-output" class="mt-4 p-3 bg-gray-100 rounded-lg output-area text-sm"></div>
+                </div>
+            </div>
+
+            <!-- 战报生成 -->
+            <div class="bg-white rounded-lg shadow-md card-hover" id="battle-card">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-scroll text-purple-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-semibold">战报生成</h3>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="battle-attacker" placeholder="进攻方" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 mb-2">
+                        <input type="text" id="battle-defender" placeholder="防守方" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 mb-2">
+                        <input type="text" id="battle-location" placeholder="战场地点" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 mb-2">
+                        <input type="text" id="battle-plot" placeholder="情节概要" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <p class="text-xs text-gray-500 mt-1">* 至少输入10个字符</p>
+                    </div>
+                    <div class="mb-3">
+                        <select id="battle-style" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option value="classical">古典白话</option>
+                            <option value="epic">北欧史诗</option>
+                            <option value="dark">黑暗哥特</option>
+                        </select>
+                    </div>
+                    <button id="battle-btn" onclick="startBattle()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-play mr-2"></i>生成战报
+                    </button>
+                    <div id="battle-output" class="mt-4 p-3 bg-gray-100 rounded-lg output-area text-sm"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold mb-4">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                连接状态
+            </h3>
+            <div id="status" class="text-sm">
+                <p><span class="font-medium">状态：</span><span id="connection-status" class="text-gray-500">就绪</span></p>
+                <p><span class="font-medium">活跃请求：</span><span id="active-requests" class="text-gray-500">0</span></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2026 · 基于 FastAPI + DeepSeek 构建</p>
+        </div>
+    </footer>
+
+    <script>
+        // ===== 配置 =====
+        const API_BASE = '';   // 同源
+
+        // ===== 锁变量 =====
+        let translateLock = false;
+        let classicalLock = false;
+        let battleLock = false;
+
+        let activeRequests = 0;
+
+        function updateStatus() {
+            document.getElementById('connection-status').textContent = activeRequests > 0 ? '连接中' : '就绪';
+            document.getElementById('active-requests').textContent = activeRequests;
+        }
+
+        function appendOutput(id, text, className = '') {
+            const el = document.getElementById(id);
+            const span = document.createElement('span');
+            span.className = className;
+            span.textContent = text;
+            el.appendChild(span);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // ===== 流式请求（统一处理清空和错误） =====
+        async function streamFetch(url, body, outputId, onComplete) {
+            const output = document.getElementById(outputId);
+            output.innerHTML = '';   // 每次请求开始前清空输出框
+
+            activeRequests++;
+            updateStatus();
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    output.innerHTML = '';
+                    appendOutput(outputId, `错误：${response.status} ${err}`, 'text-red-600');
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    appendOutput(outputId, chunk);
+                }
+
+                if (onComplete) onComplete();
+            } catch (error) {
+                output.innerHTML = '';
+                appendOutput(outputId, `网络错误：${error.message}`, 'text-red-600');
+            } finally {
+                activeRequests--;
+                updateStatus();
+            }
+        }
+
+        // ===== 通用翻译 =====
+        async function startTranslate() {
+            if (translateLock) {
+                alert('请等待上一个翻译完成');
+                return;
+            }
+            const text = document.getElementById('translate-text').value.trim();
+            if (!text) { alert('请输入要翻译的文本'); return; }
+            const targetLang = document.getElementById('translate-lang').value;
+
+            translateLock = true;
+            const btn = document.getElementById('translate-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>翻译中...';
+
+            try {
+                await streamFetch(
+                    `${API_BASE}/translate/stream`,
+                    { text, target_lang: targetLang },
+                    'translate-output'
+                );
+            } finally {
+                translateLock = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play mr-2"></i>翻译';
+            }
+        }
+
+        // ===== 文言文翻译 =====
+        async function startClassical() {
+            if (classicalLock) {
+                alert('请等待上一个翻译完成');
+                return;
+            }
+            const text = document.getElementById('classical-text').value.trim();
+            if (!text) { alert('请输入文言文原文'); return; }
+
+            classicalLock = true;
+            const btn = document.getElementById('classical-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>翻译中...';
+
+            try {
+                await streamFetch(
+                    `${API_BASE}/translate/classical/stream`,
+                    { text },
+                    'classical-output'
+                );
+            } finally {
+                classicalLock = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play mr-2"></i>翻译为白话文';
+            }
+        }
+
+        // ===== 战报生成 =====
+        async function startBattle() {
+            if (battleLock) {
+                alert('请等待上一个战报生成完成');
+                return;
+            }
+            const attacker = document.getElementById('battle-attacker').value.trim();
+            const defender = document.getElementById('battle-defender').value.trim();
+            const location = document.getElementById('battle-location').value.trim();
+            const plot = document.getElementById('battle-plot').value.trim();
+            const style = document.getElementById('battle-style').value;
+
+            if (!attacker || !defender || !location || !plot) {
+                alert('请完整填写进攻方、防守方、战场地点和情节概要');
+                return;
+            }
+            if (plot.length < 10) {
+                alert('情节概要至少需要10个字符，请补充内容。');
+                return;
+            }
+
+            battleLock = true;
+            const btn = document.getElementById('battle-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+
+            // 先显示加载提示（稍后会被 streamFetch 清空）
+            const output = document.getElementById('battle-output');
+            output.innerHTML = '';
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'text-gray-500 text-sm';
+            loadingMsg.textContent = '⏳ 正在生成战报，约需 10~15 秒，请稍候...';
+            output.appendChild(loadingMsg);
+
+            try {
+                await streamFetch(
+                    `${API_BASE}/battle_report/stream`,
+                    { attacker, defender, location, plot, style },
+                    'battle-output'
+                );
+            } finally {
+                battleLock = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play mr-2"></i>生成战报';
+            }
+        }
+    </script>
+</body>
+</html>

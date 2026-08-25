@@ -8,6 +8,7 @@
 - **流式演示界面**: [http://39.106.78.243/static/index.html](http://39.106.78.243/static/index.html)
 
 > 公网已部署，可直接体验流式输出效果。
+> 服务部署于阿里云 ECS（2核 4GB），已稳定运行。
 
 ---
 
@@ -17,7 +18,7 @@
 | :--- | :--- | :--- |
 | 通用翻译 | 支持中英日法德等多语言互译 | `POST /translate`<br>`POST /translate/stream` (流式) |
 | 文言文翻译 | 将文言文翻译为现代白话文 | `POST /translate/classical`<br>`POST /translate/classical/stream` (流式) |
-| 战报生成 | 根据战斗情节生成三种风格战报（古典白话、北欧史诗、黑暗哥特） | `POST /battle_report`<br>`POST /battle_report/stream` (流式) |
+| 战报生成（RAG 增强） | 基于 ChromaDB 检索知识库，更准确、有考据地生成三种风格战报（古典白话、北欧史诗、黑暗哥特） | `POST /battle_report`<br>`POST /battle_report/stream` (流式) |
 
 所有流式接口均使用 `text/event-stream` 响应，可实时逐字输出。
 
@@ -77,6 +78,19 @@ uvicorn app.main:app --reload
 
 ---
 
+## 🧠 RAG（检索增强生成）架构
+
+本项目在战报生成中集成了 RAG 技术：
+
+1. **知识库构建**：将《西游记》原著、北欧神话、战锤40K背景等文本切块，使用 `sentence-transformers` 生成向量，存入 ChromaDB。
+2. **检索增强**：用户请求战报时，系统先根据输入（进攻方、防守方、地点、风格）检索最相关的 3 个知识块。
+3. **生成增强**：将检索到的知识块作为上下文，连同提示词一起发送给 DeepSeek，生成更准确、有考据的战报。
+
+**技术组件**：
+- **向量数据库**：ChromaDB（持久化存储）
+- **Embedding 模型**：`paraphrase-multilingual-MiniLM-L12-v2`（支持中文）
+- **生成模型**：DeepSeek V4（通过 OpenAI SDK 调用）
+
 ## 🐳 Docker 部署
 
 ### 构建镜像
@@ -106,6 +120,12 @@ docker-compose up -d
 ## ☁️ 公网部署说明
 
 项目已部署至公网服务器，通过 Docker 容器运行。
+
+### ☁️ 部署要求
+
+- **最低配置**：2核 4GB 内存（推荐，用于支持 ChromaDB + PyTorch）
+- **操作系统**：Alibaba Cloud Linux 3 / Ubuntu 20.04+
+- **依赖**：Docker 20.10+、Python 3.10+
 
 ### 本地构建与推送
 ```bash
@@ -141,6 +161,7 @@ my_api_project/
 │   │   ├── ai_client.py        # DeepSeek 调用（含流式）
 │   │   ├── translate.py
 │   │   └── battle.py
+|   |   └── rag_indexer.py 
 │   ├── static/                 # 前端静态文件
 │   │   └── index.html          # 流式演示界面
 │   └── utils/

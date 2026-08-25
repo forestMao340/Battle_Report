@@ -5,7 +5,7 @@ import os
 
 client = AsyncOpenAI(api_key=settings.DEEPSEEK_API_KEY, base_url=settings.BASE_URL)
 
-async def call_deepseek(messages, temperature=0.7, max_tokens=1024):
+async def call_deepseek(messages, temperature=0.7, max_tokens=10240):
     try:
         response = await client.chat.completions.create(
             model=settings.MODEL,
@@ -32,7 +32,7 @@ async def call_deepseek(messages, temperature=0.7, max_tokens=1024):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"服务内部错误: {str(e)}")
 
-async def call_deepseek_stream(messages, temperature=0.7, max_tokens=2048):
+async def call_deepseek_stream(messages, temperature=0.7, max_tokens=10240):
     """
     异步生成器，逐块产出 AI 回复的文本片段。
     """

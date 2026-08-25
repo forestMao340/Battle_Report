@@ -7,15 +7,24 @@ WORKDIR /app
 # 3. 复制依赖清单（先复制这一份，利用 Docker 缓存机制）
 COPY requirements.txt .
 
-# 4. 安装 Python 依赖（使用国内镜像源加速，避免超时）
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 4.先安装 CPU 版 PyTorch（避免拉取 CUDA 依赖）
+RUN pip install --no-cache-dir torch -i https://mirrors.aliyun.com/pypi/simple/
 
-# 5. 复制项目源代码（app 文件夹）
+# 5. 安装 Python 依赖（使用国内镜像源加速，避免超时）
+RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+
+# 6. 复制项目源代码（app 文件夹）
 COPY ./app ./app
 
-# 6. 声明容器运行时监听的端口（仅文档作用，实际映射需在 run 时指定）
+# 7. 复制知识库文档
+COPY ./data ./data
+
+# 8.创建 ChromaDB 持久化目录
+RUN mkdir -p /app/chroma_db
+
+# 9. 声明容器运行时监听的端口（仅文档作用，实际映射需在 run 时指定）
 EXPOSE 8000
 
-# 7. 启动命令：使用 uvicorn 运行 FastAPI 应用
+# 10. 启动命令：使用 uvicorn 运行 FastAPI 应用
 # 注意：必须使用 JSON 数组形式（Exec 形式），以确保信号处理正确
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

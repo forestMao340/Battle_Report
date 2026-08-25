@@ -91,6 +91,14 @@ uvicorn app.main:app --reload
 - **Embedding 模型**：`paraphrase-multilingual-MiniLM-L12-v2`（支持中文）
 - **生成模型**：DeepSeek V4（通过 OpenAI SDK 调用）
 
+### 初始化知识库索引（RAG）
+
+项目使用 ChromaDB 作为向量数据库，首次启动前需要运行索引脚本：
+
+```bash
+确保 data/ 文件夹中有知识文档（.txt 文件）
+python -m app.services.rag_indexer
+
 ## 🐳 Docker 部署
 
 ### 构建镜像
@@ -166,6 +174,8 @@ my_api_project/
 │   │   └── index.html          # 流式演示界面
 │   └── utils/
 │       └── helpers.py
+└── Data/
+│   └── Knowledge Base.txt
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt

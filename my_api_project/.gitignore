@@ -19,3 +19,7 @@ env/
 # 其他
 *.log
 *.sqlite3
+
+# ChromaDB 向量数据库
+chroma_db/
+*.chroma

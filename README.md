@@ -59,7 +59,7 @@ flowchart TD
     subgraph 数据层
         K[知识库文档] -->|预处理/切块| L[(ChromaDB 向量库)]
     end
-
+```
 ---
 
 ## 📦 本地开发环境搭建

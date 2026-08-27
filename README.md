@@ -1,6 +1,6 @@
 # AI 智能翻译与战报生成 API
 
-基于 FastAPI + DeepSeek 构建的多功能 AI 服务，提供通用翻译、文言文翻译、战报生成功能，并支持流式输出（SSE）。
+基于 FastAPI + DeepSeek + Chroma_db 构建的多功能 AI 服务，提供通用翻译、文言文翻译、战报生成功能，并支持流式输出（SSE）。
 
 ## 🚀 公网访问地址
 
@@ -32,6 +32,33 @@
 - **数据校验**: Pydantic 2.10+
 - **容器化**: Docker & Docker Compose
 - **前端**: HTML + Tailwind CSS + 原生 JavaScript
+
+---
+
+## 🧠 系统架构
+
+```mermaid
+flowchart TD
+    A[用户] -->|输入战斗参数| B(Web 前端)
+    B -->|POST /battle_report/stream| C[FastAPI 后端]
+    
+    C --> D{是否需要 RAG 增强？}
+    
+    D -->|是| E[ChromaDB 向量检索]
+    E -->|返回相关文档块| F[拼接增强提示词]
+    
+    D -->|否| G[构造基础提示词]
+    
+    F --> H[调用 DeepSeek V4 API]
+    G --> H
+    
+    H -->|流式返回| I[SSE 流式响应]
+    I -->|逐字渲染| B
+    B -->|展示战报| A
+    
+    subgraph 数据层
+        K[知识库文档] -->|预处理/切块| L[(ChromaDB 向量库)]
+    end
 
 ---
 
@@ -149,6 +176,35 @@ docker run -d -p 80:8000 --restart always --name fastapi-app \
   -e DEEPSEEK_API_KEY="你的密钥" \
   -e PYTHONUTF8=1 \
   <your-registry>/<your-repo>:latest
+
+---
+
+## 🚧 部署踩坑记录
+
+在将项目部署到生产环境的过程中，我遇到了以下几个典型问题，并逐一解决，积累了宝贵的实操经验。
+
+### 坑点 1：服务器内存溢出导致 SSH 连接中断
+- **现象**：部署到 1核1GB 的阿里云轻量服务器后，服务运行一段时间便无响应，SSH 和 VNC 均无法连接。
+- **排查**：通过阿里云控制台监控发现，在加载 ChromaDB 和 Sentence-Transformers 模型时，内存占用飙升至 100%，触发系统 OOM Killer。
+- **解决**：
+    1.  **临时方案**：在服务器上创建 2GB 的 Swap 交换分区，缓解物理内存压力。
+    2.  **根本方案**：将服务器升级至 **2核4GB** 配置，确保内存充足，服务稳定运行。
+
+### 坑点 2：Docker 镜像体积过大且构建缓慢
+- **现象**：本地构建镜像耗时很长，且最终镜像体积达数 GB。
+- **原因**：`requirements.txt` 中的依赖默认安装了 CUDA 版的 PyTorch，但服务器无 GPU，这些库完全多余。
+- **解决**：在 `Dockerfile` 中**先安装 CPU 版 PyTorch**，再安装其余依赖。
+    ```dockerfile
+    RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+    RUN pip install -r requirements.txt
+优化后，镜像体积降至约 800MB，构建速度大幅提升。
+
+### 坑点 3：容器启动失败，报错 Collection does not exist
+现象：部署新版本时，容器启动后立即退出，日志显示 chromadb.errors.NotFoundError: Collection [battle_knowledge] does not exist。
+
+原因：代码中直接使用 client.get_collection() 获取集合，但首次部署时该集合尚未创建。
+
+解决：将代码改为 client.get_or_create_collection()，当集合不存在时自动创建，解决了启动依赖问题，并保留了回退机制。
 
 ---
 
